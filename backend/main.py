@@ -22,6 +22,7 @@ class UsuarioDB(Base):
     numeros_contacto = Column(String)
 
 class Operacion(Base):
+    __tablename__ = "operaciones"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     origen = Column(String, index=True)
     destino = Column(String, index=True)
@@ -37,6 +38,12 @@ class Usuario(BaseModel):
     saldo: int
     numeros_contacto: str
 
+class Operacion(BaseModel):
+    id: int
+    origen: str
+    destino: str
+    monto: int
+    fecha: str
 
 def get_db():
     db = SessionLocal()
