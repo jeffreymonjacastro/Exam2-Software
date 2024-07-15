@@ -60,22 +60,28 @@ async def root():
 
 #contacto?minumero=123
 @app.get(route+"contacto")
-async def get_contactos(minumero: str, db: Session = Depends(get_db)):
-    return {"contactos": db.query(Usuario).filter(Usuario.numero == minumero).first().NumerosContacto}
+async def contacto(minumero: str, db: Session = Depends(get_db)):
+    user = db.query(Usuario).filter(Usuario.numero == minumero).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return {"Numeros de contacto de " + user.name: user.numeros_contacto}
 
 #pagar?minumero=123&numerodes=456&monto=100
 @app.post(route+"pagar")
-async def pagar(minumero: str, numerodes: str, monto: float, db: Session = Depends(get_db)):
-    origen = db.query(Usuario).filter(Usuario.numero == minumero).first()
-    destino = db.query(Usuario).filter(Usuario.numero == numerodes).first()
-    if origen is None or destino is None:
+async def pagar(minumero: str, numerodes: str, monto: int, db: Session = Depends(get_db)):
+    user = db.query(Usuario).filter(Usuario.numero == minumero).first()
+    if user is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    if origen.saldo < monto:
+    userdes = db.query(Usuario).filter(Usuario.numero == numerodes).first()
+    if userdes is None:
+        raise HTTPException(status_code=404, detail="Usuario destino no encontrado")
+    if user.saldo < monto:
         raise HTTPException(status_code=400, detail="Saldo insuficiente")
-    origen.saldo -= monto
-    destino.saldo += monto
+    user.saldo -= monto
+    userdes.saldo += monto
+    db.add(Operacion(origen=minumero, destino=numerodes, monto=monto, fecha=str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))))
     db.commit()
-    return {"message": "Transacción exitosa", "fecha": str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))}
+    return {"message": "Operacion exitosa"}
 
 #historial?minumero=123
 @app.get(route+"historial")
@@ -83,8 +89,6 @@ async def historial(minumero: str, db: Session = Depends(get_db)):
     user = db.query(Usuario).filter(Usuario.numero == minumero).first()
     if user is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    operaciones = db.query(Operacion).filter(Operacion.origen == minumero).all()
-    result = {
-        "Saldo de" + user.name: user.saldo,
-        "Operaciones de" + user.name: operaciones
-    }
+    return {
+        "Saldo de " + user.name: user.saldo,
+        "Historial de operaciones de " + user.name: user.historialOperaciones}
