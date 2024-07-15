@@ -62,3 +62,14 @@ async def pagar(minumero: str, numerodes: str, monto: float, db: Session = Depen
     db.commit()
     return {"message": "Transacción exitosa", "fecha": str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))}
 
+#historial?minumero=123
+@app.get(route+"historial")
+async def historial(minumero: str, db: Session = Depends(get_db)):
+    user = db.query(Usuario).filter(Usuario.numero == minumero).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    operaciones = db.query(Operacion).filter(Operacion.origen == minumero).all()
+    result = {
+        "Saldo de" + user.name: user.saldo,
+        "Operaciones de" + user.name: operaciones
+    }
