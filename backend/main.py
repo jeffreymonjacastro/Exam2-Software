@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException, status, Depends
 from pydantic import BaseModel
-from typing import Optional
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -15,19 +14,20 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-class Usuario(BaseModel):
+class UsuarioDB(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    nombre = Column(String, index=True)
-    apellido = Column(String, index=True)
-    edad = Column(Integer)
+    numero = Column(String, index=True)
+    saldo = Column(Integer, index=True)
+    numeros_contacto = Column(String)
+
 
 Base.metadata.create_all(bind=engine)
 
 class Usuario(BaseModel):
-    id: Optional[int] = None
-    nombre: str
-    apellido: str
-    edad: int
+    id: int
+    numero: str
+    saldo: int
+    numeros_contacto: str
 
 
 def get_db():
