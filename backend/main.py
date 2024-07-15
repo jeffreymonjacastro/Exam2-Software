@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, status, Depends
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String
+from typing import List
+from sqlalchemy import create_engine, Column, Integer, String, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from datetime import datetime
@@ -19,7 +20,7 @@ class UsuarioDB(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     numero = Column(String, index=True)
     saldo = Column(Integer, index=True)
-    numeros_contacto = Column(String)
+    numeros_contacto = Column(JSON)
 
 class Operacion(Base):
     __tablename__ = "operaciones"
@@ -36,7 +37,7 @@ class Usuario(BaseModel):
     id: int
     numero: str
     saldo: int
-    numeros_contacto: str
+    numeros_contacto: List[str]
 
 class Operacion(BaseModel):
     id: int
@@ -57,6 +58,18 @@ route = "/billetera/"
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+
+@app.post("/usuarios/", response_model=Usuario, status_code=status.HTTP_201_CREATED)
+def crear_usuario(usuario: Usuario, db: Session = Depends(get_db)):
+    db_usuario = UsuarioDB(
+        numero=usuario.numero,
+        saldo=usuario.saldo,
+        numeros_contacto=usuario.numeros_contacto
+    )
+    db.add(db_usuario)
+    db.commit()
+    db.refresh(db_usuario)
+    return db_usuario
 
 #contacto?minumero=123
 @app.get(route+"contacto")
