@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, status, Depends
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from sqlalchemy import create_engine, Column, Integer, String, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -33,14 +33,15 @@ class Operacion(Base):
 
 Base.metadata.create_all(bind=engine)
 
+
 class Usuario(BaseModel):
-    id: int
+    id: Optional[int] = None
     numero: str
     saldo: int
     numeros_contacto: List[str]
 
 class Operacion(BaseModel):
-    id: int
+    id: Optional[int] = None
     origen: str
     destino: str
     monto: int
@@ -53,13 +54,14 @@ def get_db():
     finally:
         db.close()
 
+users = "/usuarios/"
 route = "/billetera/"
 
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
 
-@app.post("/usuarios/", response_model=Usuario, status_code=status.HTTP_201_CREATED)
+@app.post(users, response_model=Usuario, status_code=status.HTTP_201_CREATED)
 def crear_usuario(usuario: Usuario, db: Session = Depends(get_db)):
     db_usuario = UsuarioDB(
         numero=usuario.numero,
@@ -71,8 +73,12 @@ def crear_usuario(usuario: Usuario, db: Session = Depends(get_db)):
     db.refresh(db_usuario)
     return db_usuario
 
+@app.get(users, response_model=List[Usuario])
+def get_all_users(db: Session = Depends(get_db)):
+    return db.query(UsuarioDB).all()
+
 #contacto?minumero=123
-@app.get(route+"contacto")
+@app.get(route+"contactos")
 async def contacto(minumero: str, db: Session = Depends(get_db)):
     user = db.query(Usuario).filter(Usuario.numero == minumero).first()
     if user is None:
