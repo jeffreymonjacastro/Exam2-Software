@@ -15,6 +15,7 @@ Base = declarative_base()
 
 
 class UsuarioDB(Base):
+    __tablename__ = "usuarios"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     numero = Column(String, index=True)
     saldo = Column(Integer, index=True)
