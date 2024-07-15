@@ -21,6 +21,13 @@ class UsuarioDB(Base):
     saldo = Column(Integer, index=True)
     numeros_contacto = Column(String)
 
+class Operacion(Base):
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    origen = Column(String, index=True)
+    destino = Column(String, index=True)
+    monto = Column(Integer, index=True)
+    fecha = Column(String, index=True)
+
 
 Base.metadata.create_all(bind=engine)
 
