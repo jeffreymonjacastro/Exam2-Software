@@ -16,6 +16,7 @@ Base = declarative_base()
 class UsuarioDB(Base):
     __tablename__ = "usuarios"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    nombre = Column(String, index=True)
     numero = Column(String, unique=True, index=True)
     saldo = Column(Integer, index=True)
     numeros_contacto = Column(JSON)
@@ -46,13 +47,14 @@ class Operacion(BaseModel):
 
 class Usuario(BaseModel):
     id: Optional[int] = None
+    nombre: str
     numero: str
     saldo: int
     numeros_contacto: List[str]
     historialOperaciones: List[Operacion] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 def get_db():
     db = SessionLocal()
@@ -68,6 +70,7 @@ async def root():
 @app.post("/usuarios/", response_model=Usuario, status_code=status.HTTP_201_CREATED)
 def crear_usuario(usuario: Usuario, db: Session = Depends(get_db)):
     db_usuario = UsuarioDB(
+        nombre=usuario.nombre,
         numero=usuario.numero,
         saldo=usuario.saldo,
         numeros_contacto=usuario.numeros_contacto
@@ -86,7 +89,18 @@ async def contacto(minumero: str, db: Session = Depends(get_db)):
     user = db.query(UsuarioDB).filter(UsuarioDB.numero == minumero).first()
     if user is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    return {f"Numeros de contacto de {user.numero}": user.numeros_contacto}
+    
+    numeros_contacto = user.numeros_contacto
+
+    contactos = {}
+    for numero in numeros_contacto:
+        contacto_usuario = db.query(UsuarioDB).filter(UsuarioDB.numero == numero).first()
+        if contacto_usuario:
+            contactos[numero] = contacto_usuario.nombre
+        else:
+            contactos[numero] = "Nombre no encontrado" 
+
+    return contactos
 
 @app.post("/billetera/pagar")
 async def pagar(minumero: str, numerodes: str, monto: int, db: Session = Depends(get_db)):
@@ -98,6 +112,7 @@ async def pagar(minumero: str, numerodes: str, monto: int, db: Session = Depends
         raise HTTPException(status_code=404, detail="Usuario destino no encontrado")
     if user.saldo < monto:
         raise HTTPException(status_code=400, detail="Saldo insuficiente")
+        
     user.saldo -= monto
     userdes.saldo += monto
 
@@ -106,15 +121,33 @@ async def pagar(minumero: str, numerodes: str, monto: int, db: Session = Depends
     operacion = OperacionDB(origen=minumero, destino=numerodes, monto=monto, fecha=fecha_operacion)
     db.add(operacion)
     db.commit()
-    return {"message": "Realizado en " + fecha_operacion}
+    return {"message": "Operacion exitosa. Realizado en " + fecha_operacion}
 
 @app.get("/billetera/historial")
 async def historial(minumero: str, db: Session = Depends(get_db)):
     user = db.query(UsuarioDB).filter(UsuarioDB.numero == minumero).first()
     if user is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    operaciones = db.query(OperacionDB).filter(OperacionDB.origen == minumero).all()
-    return {
-        "Saldo de " + user.numero: user.saldo,
-        "Historial de operaciones de " + user.numero: operaciones
+    
+    
+    operaciones_origen = db.query(OperacionDB).filter(OperacionDB.origen == minumero).all()
+    operaciones_destino = db.query(OperacionDB).filter(OperacionDB.destino == minumero).all()
+    
+    historial_operaciones = []
+
+    for operacion in operaciones_origen:
+        usuario_destino = db.query(UsuarioDB).filter(UsuarioDB.numero == operacion.destino).first()
+        if usuario_destino:
+            historial_operaciones.append(f"Pago realizado de {operacion.monto} a {usuario_destino.numero}")
+
+    for operacion in operaciones_destino:
+        usuario_origen = db.query(UsuarioDB).filter(UsuarioDB.numero == operacion.origen).first()
+        if usuario_origen:
+            historial_operaciones.append(f"Pago recibido de {operacion.monto} de {usuario_origen.numero}")
+
+    response = {
+        f"Saldo de {user.nombre}": user.saldo,
+        f"Operaciones de {user.nombre}": historial_operaciones
     }
+
+    return response
