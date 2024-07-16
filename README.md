@@ -1,5 +1,10 @@
 # Exam2-Software
 
+## Integrantes:
+- Fabrizzio Vilchez Espinoza
+- Jeffrey Monja Castro
+
+
 ## Respuestas de la pregunta 3
 
 ### Cambios necesarios en el código
