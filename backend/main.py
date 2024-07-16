@@ -91,27 +91,39 @@ async def contacto(minumero: str, db: Session = Depends(get_db)):
 
 #pagar?minumero=123&numerodes=456&monto=100
 @app.post(route+"pagar")
-async def pagar(minumero: str, numerodes: str, monto: int, db: Session = Depends(get_db)):
+async def pagar(minumero: str, numerodestino: str, monto: int, db: Session = Depends(get_db)):
     user = db.query(Usuario).filter(Usuario.numero == minumero).first()
+
     if user is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    userdes = db.query(Usuario).filter(Usuario.numero == numerodes).first()
+
+    userdes = db.query(Usuario).filter(Usuario.numero == numerodestino).first()
+
     if userdes is None:
         raise HTTPException(status_code=404, detail="Usuario destino no encontrado")
+
     if user.saldo < monto:
         raise HTTPException(status_code=400, detail="Saldo insuficiente")
+
     user.saldo -= monto
     userdes.saldo += monto
-    db.add(Operacion(origen=minumero, destino=numerodes, monto=monto, fecha=str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))))
+
+    fecha_operacion = str(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+
+    db.add(Operacion(origen=minumero, destino=numerodestino, monto=monto, fecha=fecha_operacion))
     db.commit()
-    return {"message": "Operacion exitosa"}
+    
+    return {"message": "Realizado en la fecha: " + fecha_operacion}
 
 #historial?minumero=123
 @app.get(route+"historial")
 async def historial(minumero: str, db: Session = Depends(get_db)):
     user = db.query(Usuario).filter(Usuario.numero == minumero).first()
+
     if user is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
     return {
         "Saldo de " + user.name: user.saldo,
-        "Historial de operaciones de " + user.name: user.historialOperaciones}
+        "Historial de operaciones de " + user.name: user.Operaciones
+    }
