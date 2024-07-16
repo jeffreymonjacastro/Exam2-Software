@@ -6,7 +6,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from datetime import datetime
 
-
 app = FastAPI()
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
@@ -14,16 +13,15 @@ engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-
 class UsuarioDB(Base):
     __tablename__ = "usuarios"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    numero = Column(String, index=True)
+    numero = Column(String, unique=True, index=True)
     saldo = Column(Integer, index=True)
     numeros_contacto = Column(JSON)
-    Operaciones = relationship("Operacion", back_populates="usuario")
+    operaciones = relationship("OperacionDB", back_populates="usuario")
 
-class Operacion(Base):
+class OperacionDB(Base):
     __tablename__ = "operaciones"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     origen = Column(String, index=True)
@@ -31,17 +29,9 @@ class Operacion(Base):
     monto = Column(Integer, index=True)
     fecha = Column(String, index=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"))
-
+    usuario = relationship("UsuarioDB", back_populates="operaciones")
 
 Base.metadata.create_all(bind=engine)
-
-
-class Usuario(BaseModel):
-    id: Optional[int] = None
-    numero: str
-    saldo: int
-    numeros_contacto: List[str]
-    historialOperaciones: List[Operacion] = []
 
 class Operacion(BaseModel):
     id: Optional[int] = None
@@ -51,6 +41,19 @@ class Operacion(BaseModel):
     fecha: str
     usuario_id: int
 
+    class Config:
+        orm_mode = True
+
+class Usuario(BaseModel):
+    id: Optional[int] = None
+    numero: str
+    saldo: int
+    numeros_contacto: List[str]
+    historialOperaciones: List[Operacion] = []
+
+    class Config:
+        orm_mode = True
+
 def get_db():
     db = SessionLocal()
     try:
@@ -58,14 +61,11 @@ def get_db():
     finally:
         db.close()
 
-users = "/usuarios/"
-route = "/billetera/"
-
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
 
-@app.post(users, response_model=Usuario, status_code=status.HTTP_201_CREATED)
+@app.post("/usuarios/", response_model=Usuario, status_code=status.HTTP_201_CREATED)
 def crear_usuario(usuario: Usuario, db: Session = Depends(get_db)):
     db_usuario = UsuarioDB(
         numero=usuario.numero,
@@ -77,53 +77,41 @@ def crear_usuario(usuario: Usuario, db: Session = Depends(get_db)):
     db.refresh(db_usuario)
     return db_usuario
 
-@app.get(users, response_model=List[Usuario])
+@app.get("/usuarios/", response_model=List[Usuario])
 def get_all_users(db: Session = Depends(get_db)):
     return db.query(UsuarioDB).all()
 
-#contacto?minumero=123
-@app.get(route+"contactos")
+@app.get("/billetera/contactos")
 async def contacto(minumero: str, db: Session = Depends(get_db)):
-    user = db.query(Usuario).filter(Usuario.numero == minumero).first()
+    user = db.query(UsuarioDB).filter(UsuarioDB.numero == minumero).first()
     if user is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    return {"Numeros de contacto de " + user.name: user.numeros_contacto}
+    return {f"Numeros de contacto de {user.numero}": user.numeros_contacto}
 
-#pagar?minumero=123&numerodes=456&monto=100
-@app.post(route+"pagar")
-async def pagar(minumero: str, numerodestino: str, monto: int, db: Session = Depends(get_db)):
-    user = db.query(Usuario).filter(Usuario.numero == minumero).first()
-
+@app.post("/billetera/pagar")
+async def pagar(minumero: str, numerodes: str, monto: int, db: Session = Depends(get_db)):
+    user = db.query(UsuarioDB).filter(UsuarioDB.numero == minumero).first()
     if user is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-
-    userdes = db.query(Usuario).filter(Usuario.numero == numerodestino).first()
-
+    userdes = db.query(UsuarioDB).filter(UsuarioDB.numero == numerodes).first()
     if userdes is None:
         raise HTTPException(status_code=404, detail="Usuario destino no encontrado")
-
     if user.saldo < monto:
         raise HTTPException(status_code=400, detail="Saldo insuficiente")
-
     user.saldo -= monto
     userdes.saldo += monto
-
-    fecha_operacion = str(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
-
-    db.add(Operacion(origen=minumero, destino=numerodestino, monto=monto, fecha=fecha_operacion))
+    operacion = OperacionDB(origen=minumero, destino=numerodes, monto=monto, fecha=datetime.now().strftime("%Y-%m-%d %H:%M:%S"), usuario_id=user.id)
+    db.add(operacion)
     db.commit()
-    
-    return {"message": "Realizado en la fecha: " + fecha_operacion}
+    return {"message": "Operacion exitosa"}
 
-#historial?minumero=123
-@app.get(route+"historial")
+@app.get("/billetera/historial")
 async def historial(minumero: str, db: Session = Depends(get_db)):
-    user = db.query(Usuario).filter(Usuario.numero == minumero).first()
-
+    user = db.query(UsuarioDB).filter(UsuarioDB.numero == minumero).first()
     if user is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
+    operaciones = db.query(OperacionDB).filter(OperacionDB.origen == minumero).all()
     return {
-        "Saldo de " + user.name: user.saldo,
-        "Historial de operaciones de " + user.name: user.Operaciones
+        "Saldo de " + user.numero: user.saldo,
+        "Historial de operaciones de " + user.numero: operaciones
     }
