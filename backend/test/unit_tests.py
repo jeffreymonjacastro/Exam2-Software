@@ -26,7 +26,6 @@ def realizar_pago(minumero, numerodestino, monto):
 
 @pytest.fixture(scope="module")
 def setup_users():
-    # Create two users for testing
     create_user("User1", "123456789", 500, ["987654321"])
     create_user("User2", "987654321", 300, ["123456789"])
 

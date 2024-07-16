@@ -1,0 +1,145 @@
+{
+	"info": {
+		"_postman_id": "6bf399cc-2dd9-4ee4-8680-6221f2f83ad4",
+		"name": "E2 Software",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "27024569",
+		"_collection_link": "https://restless-meadow-922782.postman.co/workspace/JeffreyWorkspace~7da7d723-dc62-4262-8340-a7a455d30de3/collection/27024569-6bf399cc-2dd9-4ee4-8680-6221f2f83ad4?action=share&source=collection_link&creator=27024569"
+	},
+	"item": [
+		{
+			"name": "Create User",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"nombre\": \"test3\",\r\n    \"numero\": \"113\",\r\n    \"saldo\": 100,\r\n    \"numeros_contacto\": [\r\n        \"111\", \"112\"\r\n    ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://127.0.0.1:8000/usuarios/"
+			},
+			"response": []
+		},
+		{
+			"name": "GetAllUsers",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"numero\": \"999999999\",\r\n    \"saldo\": 100,\r\n    \"numeros_contacto\": [\r\n        \"123\", \"456\"\r\n    ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://127.0.0.1:8000/usuarios/"
+			},
+			"response": []
+		},
+		{
+			"name": "getContactos",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/billetera/contactos?minumero=113",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"billetera",
+						"contactos"
+					],
+					"query": [
+						{
+							"key": "minumero",
+							"value": "113"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "pagar",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/billetera/pagar?minumero=111&numerodes=112&monto=10",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"billetera",
+						"pagar"
+					],
+					"query": [
+						{
+							"key": "minumero",
+							"value": "111"
+						},
+						{
+							"key": "numerodes",
+							"value": "112"
+						},
+						{
+							"key": "monto",
+							"value": "10"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Historial",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/billetera/historial?minumero=111",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"billetera",
+						"historial"
+					],
+					"query": [
+						{
+							"key": "minumero",
+							"value": "111"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

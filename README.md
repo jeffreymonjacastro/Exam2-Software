@@ -4,6 +4,28 @@
 - Fabrizzio Vilchez Espinoza
 - Jeffrey Monja Castro
 
+## Pregunta 1
+
+El código se realizó en el framework de `FastAPI`. Los códigos se encuentran en la carpeta `backend/main.py`.
+
+Para ejecutar el servidor de backend, correr el siguiente comando: 
+
+```bash
+./run.bat
+```
+
+Esto ejecutará el servidor en el puerto 8000.
+
+En la carpeta raíz se encuentra una colección de postman para probar la API.
+
+## Pregunta 2
+
+Para ejecutar los test, dirigirse a la carpeta `test` y ejecutar el siguiente comando:
+
+```bash
+pytest ./unit_test.py
+```
+
 
 ## Respuestas de la pregunta 3
 
