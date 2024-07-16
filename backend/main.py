@@ -100,10 +100,13 @@ async def pagar(minumero: str, numerodes: str, monto: int, db: Session = Depends
         raise HTTPException(status_code=400, detail="Saldo insuficiente")
     user.saldo -= monto
     userdes.saldo += monto
-    operacion = OperacionDB(origen=minumero, destino=numerodes, monto=monto, fecha=datetime.now().strftime("%Y-%m-%d %H:%M:%S"), usuario_id=user.id)
+
+    fecha_operacion = str(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+
+    operacion = OperacionDB(origen=minumero, destino=numerodes, monto=monto, fecha=fecha_operacion)
     db.add(operacion)
     db.commit()
-    return {"message": "Operacion exitosa"}
+    return {"message": "Realizado en " + fecha_operacion}
 
 @app.get("/billetera/historial")
 async def historial(minumero: str, db: Session = Depends(get_db)):
