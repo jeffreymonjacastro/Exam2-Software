@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException, status, Depends
 from pydantic import BaseModel
 from typing import List, Optional
-from sqlalchemy import create_engine, Column, Integer, String, JSON
+from sqlalchemy import create_engine, Column, Integer, String, JSON, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker, Session, relationship
 from datetime import datetime
 
 
@@ -21,6 +21,7 @@ class UsuarioDB(Base):
     numero = Column(String, index=True)
     saldo = Column(Integer, index=True)
     numeros_contacto = Column(JSON)
+    Operaciones = relationship("Operacion", back_populates="usuario")
 
 class Operacion(Base):
     __tablename__ = "operaciones"
@@ -29,6 +30,7 @@ class Operacion(Base):
     destino = Column(String, index=True)
     monto = Column(Integer, index=True)
     fecha = Column(String, index=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"))
 
 
 Base.metadata.create_all(bind=engine)
@@ -39,6 +41,7 @@ class Usuario(BaseModel):
     numero: str
     saldo: int
     numeros_contacto: List[str]
+    historialOperaciones: List[Operacion] = []
 
 class Operacion(BaseModel):
     id: Optional[int] = None
@@ -46,6 +49,7 @@ class Operacion(BaseModel):
     destino: str
     monto: int
     fecha: str
+    usuario_id: int
 
 def get_db():
     db = SessionLocal()
